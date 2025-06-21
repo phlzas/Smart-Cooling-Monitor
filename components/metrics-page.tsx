@@ -124,37 +124,6 @@ export function MetricsPage({
     return chartData.filter((data) => new Date(data.timestamp).getTime() >= cutoffTime)
   }, [chartData, selectedInterval])
 
-  // Filter event log based on selected interval
-  const filteredEventLog = useMemo(() => {
-    if (selectedInterval === "all") return eventLog
-    const now = Date.now()
-    let cutoffTime = now
-    switch (selectedInterval) {
-      case "5m":
-        cutoffTime = now - 5 * 60 * 1000
-        break
-      case "15m":
-        cutoffTime = now - 15 * 60 * 1000
-        break
-      case "30m":
-        cutoffTime = now - 30 * 60 * 1000
-        break
-      case "1h":
-        cutoffTime = now - 60 * 60 * 1000
-        break
-      case "6h":
-        cutoffTime = now - 6 * 60 * 60 * 1000
-        break
-      case "1d":
-        cutoffTime = now - 24 * 60 * 60 * 1000
-        break
-      case "7d":
-        cutoffTime = now - 7 * 24 * 60 * 60 * 1000
-        break
-    }
-    return eventLog.filter(e => new Date(e.timestamp).getTime() >= cutoffTime)
-  }, [eventLog, selectedInterval])
-
   const convertTemp = (temp: number) => {
     return isCelsius ? temp : (temp * 9) / 5 + 32
   }
@@ -348,14 +317,14 @@ export function MetricsPage({
         </div>
       </div>
 
-      {/* Event Log Section - Now filtered by selected interval */}
+      {/* Event Log Section - Dedicated component */}
       <div className="mt-8">
         <Card className="bg-gray-800/50 border-gray-700">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Activity className="h-5 w-5 text-purple-400" />
-                Event Log ({filteredEventLog.length} events)
+                Event Log ({eventLog.length} events)
               </CardTitle>
               <Button onClick={onExportEventCSV} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
@@ -365,7 +334,7 @@ export function MetricsPage({
           </CardHeader>
           <CardContent>
             <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-              {filteredEventLog.length === 0 ? (
+              {eventLog.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
                   <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm font-medium">No events logged yet</p>
@@ -373,7 +342,7 @@ export function MetricsPage({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredEventLog
+                  {eventLog
                     .slice(-20)
                     .reverse()
                     .map((event) => (
