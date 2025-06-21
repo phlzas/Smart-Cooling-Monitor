@@ -172,6 +172,8 @@ export function MetricsPage({
         status: hotCount >= 3 ? "critical" : hotCount >= 1 ? "warning" : "good",
       }
     })
+    console.log("Raw chartData length:", chartData.length)
+    console.log("Filtered chartData length:", filteredChartData.length)
     return predictions
   }, [racks])
 
