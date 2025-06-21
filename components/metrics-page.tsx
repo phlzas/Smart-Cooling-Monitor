@@ -127,8 +127,10 @@ export function MetricsPage({
   // Filter event log based on selected interval
   const filteredEventLog = useMemo(() => {
     if (selectedInterval === "all") return eventLog
+
     const now = Date.now()
     let cutoffTime = now
+
     switch (selectedInterval) {
       case "5m":
         cutoffTime = now - 5 * 60 * 1000
@@ -152,7 +154,8 @@ export function MetricsPage({
         cutoffTime = now - 7 * 24 * 60 * 60 * 1000
         break
     }
-    return eventLog.filter(e => new Date(e.timestamp).getTime() >= cutoffTime)
+
+    return eventLog.filter((e) => new Date(e.timestamp).getTime() >= cutoffTime)
   }, [eventLog, selectedInterval])
 
   const convertTemp = (temp: number) => {
