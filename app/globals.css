@@ -92,3 +92,11 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Force all black text to a light color for dark backgrounds */
+.text-black,
+[style*="color: rgb(0, 0, 0)"],
+[style*="color:#000"],
+[style*="color: #000"] {
+  color: #f3f4f6 !important; /* Tailwind's gray-100, or use #fff for pure white */
+}

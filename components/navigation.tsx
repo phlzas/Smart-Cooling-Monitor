@@ -1,22 +1,36 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { BarChart3, Home, History, Menu } from "lucide-react"
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { BarChart3, Home, History, Menu } from "lucide-react";
+import { EfficiencyVisualizer } from "@/components/efficiency-visualizer";
 interface NavigationProps {
-  currentPage: "dashboard" | "metrics" | "history"
-  onPageChange: (page: "dashboard" | "metrics" | "history") => void
+  currentPage: "dashboard" | "metrics" | "history";
+  onPageChange: (page: "dashboard" | "metrics" | "history") => void;
+}
+interface EfficiencyMetrics {
+  current: number;
+  potential: number;
+  savings: number;
+  trend: "improving" | "declining" | "stable";
 }
 
-export function Navigation({ currentPage, onPageChange }: NavigationProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+export function Navigation({
+  currentPage,
+  onPageChange,
+  efficiencyMetrics,
+  electricityRate,
+}: NavigationProps & {
+  efficiencyMetrics: EfficiencyMetrics;
+  electricityRate: number;
+}) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
     { id: "dashboard" as const, label: "Dashboard", icon: Home },
     { id: "metrics" as const, label: "Metrics", icon: BarChart3 },
     { id: "history" as const, label: "History", icon: History },
-  ]
+  ];
 
   return (
     <>
@@ -38,7 +52,11 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
 
       {/* Mobile Navigation */}
       <div className="md:hidden">
-        <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
           <Menu className="h-5 w-5" />
         </Button>
 
@@ -51,8 +69,8 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
                   variant={currentPage === item.id ? "default" : "ghost"}
                   size="sm"
                   onClick={() => {
-                    onPageChange(item.id)
-                    setMobileMenuOpen(false)
+                    onPageChange(item.id);
+                    setMobileMenuOpen(false);
                   }}
                   className="flex items-center gap-2 justify-start"
                 >
@@ -65,5 +83,5 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
         )}
       </div>
     </>
-  )
+  );
 }
