@@ -26,6 +26,13 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { MetricsPage } from "@/components/metrics-page";
 import { useRackTracking } from "@/hooks/useRackTracking";
+import {
+  useElectricityRate,
+  ElectricityRateProvider,
+} from "@/context/ElectricityRateContext";
+
+import { fetchLatestEiaRates } from "@/lib/Api/eiaApi";
+import type { EIASectorData } from "@/lib/Api/eiaApi";
 
 export interface RackData {
   id: string;
@@ -92,6 +99,16 @@ export default function SmartCoolingMonitor() {
     getMaintenancePrediction,
     getCoolingEfficiency,
   } = useRackTracking();
+  const {
+    rates,
+    rateType,
+    setRateType,
+    electricityRate,
+    setElectricityRate,
+    isManual,
+    resetToEiaRate,
+    loading: loadingRates,
+  } = useElectricityRate();
   const [racks, setRacks] = useState<RackData[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -150,7 +167,7 @@ export default function SmartCoolingMonitor() {
       severity?: "info" | "warning" | "critical";
     }>
   >([]);
-  const [electricityRate, setElectricityRate] = useState(0.1); // $0.10 per kWh
+  // Set electricityRate to undefined initially, will set after rates load
   const [sessionKwh, setSessionKwh] = useState(0);
   const [baselineKwh, setBaselineKwh] = useState(0);
   const [energyData, setEnergyData] = useState<
@@ -302,10 +319,13 @@ export default function SmartCoolingMonitor() {
   // ======================
   // Simulation Logic
   // ======================
+
   useEffect(() => {
     calculateEfficiency();
   }, [racks, baselineKwh, sessionKwh]);
-
+  useEffect(() => {
+    console.log("electricityRate changed:", electricityRate);
+  }, [electricityRate]);
   useEffect(() => {
     if (!isSimulating) return;
 
@@ -336,7 +356,7 @@ export default function SmartCoolingMonitor() {
           // Overheat event detection
           if (newTemp > 35 && oldTemp <= 35) {
             const energyDelta = 0.008;
-            const costDelta = energyDelta * electricityRate;
+            const costDelta = energyDelta * (electricityRate ?? 0);
 
             setEventLog((prev) => [
               ...prev,
@@ -500,7 +520,7 @@ export default function SmartCoolingMonitor() {
 
               // Log AutoAction event
               const energyDelta = (boostPercent / 100) * 0.5 * (120 / 3600);
-              const costDelta = energyDelta * electricityRate;
+              const costDelta = energyDelta * (electricityRate ?? 0);
 
               setEventLog((prev) => [
                 ...prev,
@@ -570,7 +590,6 @@ export default function SmartCoolingMonitor() {
     simulationIntensity,
     isCelsius,
     autoModeEnabled,
-    setElectricityRate,
     electricityRate,
     sessionKwh,
     baselineKwh,
@@ -605,7 +624,7 @@ export default function SmartCoolingMonitor() {
 
               // Log manual FanBoost event
               const energyDelta = 0.01 * (90 / 3600);
-              const costDelta = energyDelta * electricityRate;
+              const costDelta = energyDelta * (electricityRate ?? 0);
 
               setEventLog((prev) => [
                 ...prev,
@@ -693,7 +712,18 @@ export default function SmartCoolingMonitor() {
   // ======================
   // Render
   // ======================
-  if (!hydrated) return null;
+  if (!hydrated || loadingRates) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
+          <span className="text-white text-lg font-mono">
+            Loading electricity rates…
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white overflow-x-hidden max-w-full box-border">
@@ -844,10 +874,8 @@ export default function SmartCoolingMonitor() {
               isCelsius={isCelsius}
               onExportCSV={handleExportCSV}
               energyData={energyData}
-              electricityRate={electricityRate}
-              setElectricityRate={setElectricityRate} // <-- Add this line
               eventLog={eventLog}
-              onExportEventCSV={() => {}} // Implement if needed
+              onExportEventCSV={() => {}}
             />
           </main>
         )}
@@ -906,7 +934,6 @@ export default function SmartCoolingMonitor() {
       <ProfessionalFooter
         sessionKwh={sessionKwh}
         baselineKwh={baselineKwh}
-        electricityRate={electricityRate}
         totalEvents={historyEvents.length}
         isSimulating={isSimulating}
       />
@@ -989,9 +1016,7 @@ export default function SmartCoolingMonitor() {
       />
     </div>
   );
-  
 }
-
 
 function calculateRackPower(rack: RackData): number {
   const baseFanPower = 500; // 500W at 100% fan speed
@@ -999,4 +1024,13 @@ function calculateRackPower(rack: RackData): number {
     rack.status === "hot" ? 100 : rack.status === "warm" ? 75 : 50;
   const tempMultiplier = 1 + (rack.temperature - 20) / 100; // 20°C ambient
   return baseFanPower * (fanSpeed / 100) * tempMultiplier;
+}
+
+// Wrap the app in the provider
+export function AppWithElectricityRateProvider() {
+  return (
+    <ElectricityRateProvider>
+      <SmartCoolingMonitor />
+    </ElectricityRateProvider>
+  );
 }

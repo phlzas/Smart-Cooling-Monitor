@@ -3,27 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Home, History, Menu } from "lucide-react";
-import { EfficiencyVisualizer } from "@/components/efficiency-visualizer";
+
 interface NavigationProps {
   currentPage: "dashboard" | "metrics" | "history";
   onPageChange: (page: "dashboard" | "metrics" | "history") => void;
 }
-interface EfficiencyMetrics {
-  current: number;
-  potential: number;
-  savings: number;
-  trend: "improving" | "declining" | "stable";
-}
 
-export function Navigation({
-  currentPage,
-  onPageChange,
-  efficiencyMetrics,
-  electricityRate,
-}: NavigationProps & {
-  efficiencyMetrics: EfficiencyMetrics;
-  electricityRate: number;
-}) {
+export function Navigation({ currentPage, onPageChange }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [

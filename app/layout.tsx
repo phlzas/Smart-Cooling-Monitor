@@ -1,10 +1,11 @@
+import { ElectricityRateProvider } from "@/context/ElectricityRateContext";
 import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.dev",
+  title: "My Project",
+  description: "Created with Next.js",
+  generator: "Next.js",
 };
 
 export default function RootLayout({
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-900 text-white" suppressHydrationWarning>
-        {children}
+        <ElectricityRateProvider>{children}</ElectricityRateProvider>
       </body>
     </html>
   );

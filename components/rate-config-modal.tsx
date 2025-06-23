@@ -1,38 +1,39 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { X, DollarSign } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, DollarSign } from "lucide-react";
+import { useElectricityRate } from "@/context/ElectricityRateContext";
 
 interface RateConfigModalProps {
-  isOpen: boolean
-  onClose: () => void
-  currentRate: number
-  onRateChange: (rate: number) => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function RateConfigModal({ isOpen, onClose, currentRate, onRateChange }: RateConfigModalProps) {
-  const [rate, setRate] = useState(currentRate.toString())
+export function RateConfigModal({ isOpen, onClose }: RateConfigModalProps) {
+  const { electricityRate, setElectricityRate, resetToEiaRate, isManual } =
+    useElectricityRate();
+  const [rate, setRate] = useState(electricityRate.toString());
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleSave = () => {
-    const numRate = Number.parseFloat(rate)
+    const numRate = Number.parseFloat(rate);
     if (!isNaN(numRate) && numRate > 0) {
-      onRateChange(numRate)
-      onClose()
+      setElectricityRate(numRate, true);
+      onClose();
     }
-  }
+  };
 
   const presetRates = [
     { label: "Residential (US Average)", value: 0.13 },
     { label: "Commercial (US Average)", value: 0.11 },
     { label: "Industrial (US Average)", value: 0.07 },
     { label: "Data Center (Bulk)", value: 0.05 },
-  ]
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -43,7 +44,12 @@ export function RateConfigModal({ isOpen, onClose, currentRate, onRateChange }: 
               <DollarSign className="h-5 w-5 text-green-400" />
               Electricity Rate
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -89,9 +95,18 @@ export function RateConfigModal({ isOpen, onClose, currentRate, onRateChange }: 
             <Button onClick={handleSave} className="flex-1">
               Save Rate
             </Button>
+            {!isManual && (
+              <Button
+                variant="secondary"
+                onClick={resetToEiaRate}
+                className="flex-1"
+              >
+                Reset to EIA Rate
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

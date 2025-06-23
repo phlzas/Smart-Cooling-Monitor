@@ -50,10 +50,7 @@ export function ProfessionalHeader({
 
         <div className="flex items-center gap-4 flex-shrink-0">
           {/* Navigation */}
-          <Navigation
-            currentPage={currentPage}
-            onPageChange={onPageChange}
-          />
+          <Navigation currentPage={currentPage} onPageChange={onPageChange} />
           {/* System Status */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">

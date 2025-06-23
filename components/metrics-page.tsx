@@ -33,8 +33,8 @@ import {
 import { RoomSummary } from "./room-summary";
 import { BaselineComparisonChart } from "./baseline-comparison-chart";
 import { Badge } from "@/components/ui/badge";
-import { fetchLatestEiaRates } from "@/lib/Api/eiaApi";
 import type { EIASectorData } from "@/lib/Api/eiaApi";
+import { useElectricityRate } from "@/context/ElectricityRateContext";
 
 interface RackData {
   id: string;
@@ -54,6 +54,23 @@ interface ChartData {
   avgAirflow: number;
 }
 
+interface EventLogEntry {
+  id: string;
+  timestamp: number;
+  rackId: string;
+  rackName: string;
+  eventType: string;
+  cause: string;
+  actionTaken: string;
+  outcome: string;
+  energyDelta: number;
+  costDelta: number;
+  severity: string;
+  duration?: number;
+  tempBefore?: number;
+  tempAfter?: number;
+}
+
 interface MetricsPageProps {
   racks: RackData[];
   chartData: ChartData[];
@@ -70,9 +87,7 @@ interface MetricsPageProps {
     baselineKwh: number;
     savingsKwh: number;
   }>;
-  electricityRate: number;
-  setElectricityRate: (rate: number) => void; // <-- Add this line
-  eventLog: Array<any>;
+  eventLog: EventLogEntry[];
   onExportEventCSV: () => void;
 }
 
@@ -84,24 +99,38 @@ export function MetricsPage({
   isCelsius,
   onExportCSV,
   energyData,
-  electricityRate,
-  setElectricityRate,
   eventLog,
   onExportEventCSV,
 }: MetricsPageProps) {
-  const [selectedInterval, setSelectedInterval] = useState("all");
-  const [rates, setRates] = useState<
-    Record<"RES" | "COM", EIASectorData | null>
-  >({
-    RES: null,
-    COM: null,
-  });
-  const [rateType, setRateType] = useState<"RES" | "COM">("RES");
+  const {
+    rateType,
+    setRateType,
+    electricityRate,
+    rates,
+    loading,
+  } = useElectricityRate();
+  console.log("DEBUG", rateType, electricityRate, rates);
 
-  // Fetch EIA rates
-  useEffect(() => {
-    fetchLatestEiaRates().then(setRates);
-  }, []);
+  // Show loading overlay if rates are loading
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 z-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
+          <span className="text-white text-lg font-mono">
+            Loading electricity rates…
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const [selectedInterval, setSelectedInterval] = useState("all");
+
+  const selectedRate =
+    rates[rateType] && typeof rates[rateType]?.price === "number"
+      ? rates[rateType]!.price / 100
+      : electricityRate;
 
   // Calculate elapsed time and available intervals
   const elapsedMinutes = (Date.now() - simulationStartTime) / (1000 * 60);
@@ -158,7 +187,12 @@ export function MetricsPage({
     return predictions;
   }, [racks]);
 
-  const selectedRate = rates[rateType] ?? electricityRate;
+  // Loading state for rates
+  const ratesLoaded =
+    rates.RES &&
+    rates.COM &&
+    typeof rates.RES.price === "number" &&
+    typeof rates.COM.price === "number";
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -201,22 +235,20 @@ export function MetricsPage({
               value={rateType}
               onValueChange={(value) => {
                 setRateType(value as "RES" | "COM");
-                // If EIA rate is available, update the parent state
-                const selected = rates[value as "RES" | "COM"];
-                if (selected && typeof selected.price === "number") {
-                  setElectricityRate(selected.price / 100);
-                }
+                // Debug log for verification
+                console.log("DEBUG", value, rates, electricityRate);
               }}
+              disabled={loading}
             >
               <SelectTrigger className="w-48 bg-slate-800">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="RES">
+                <SelectItem value="RES" disabled={!rates.RES}>
                   Residential{" "}
                   {rates.RES && `($${(rates.RES.price / 100).toFixed(4)}/kWh)`}
                 </SelectItem>
-                <SelectItem value="COM">
+                <SelectItem value="COM" disabled={!rates.COM}>
                   Commercial{" "}
                   {rates.COM && `($${(rates.COM.price / 100).toFixed(4)}/kWh)`}
                 </SelectItem>
@@ -224,11 +256,7 @@ export function MetricsPage({
             </Select>
           </div>
           <div className="text-xs text-gray-500">
-            Current Rate: $
-            {typeof selectedRate === "number"
-              ? selectedRate.toFixed(4)
-              : (selectedRate.price / 100).toFixed(4)}
-            / kWh
+            Current Rate: ${electricityRate?.toFixed(4) ?? "0.0000"}/ kWh
           </div>
         </div>
       </div>
