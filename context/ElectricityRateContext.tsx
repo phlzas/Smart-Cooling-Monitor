@@ -56,14 +56,25 @@ export function ElectricityRateProvider({
   useEffect(() => {
     if (isManual) return;
     if (loading) return; // Don't update until loading is done
-    const resRate = rates.RES?.price ? rates.RES.price / 100 : undefined;
-    const comRate = rates.COM?.price ? rates.COM.price / 100 : undefined;
-    let selectedRate: number | undefined = undefined;
-    if (rateType === "RES" && resRate !== undefined) selectedRate = resRate;
-    else if (rateType === "COM" && comRate !== undefined) selectedRate = comRate;
-    else if (resRate !== undefined) selectedRate = resRate;
-    else if (comRate !== undefined) selectedRate = comRate;
-    setElectricityRateState(selectedRate ?? 0.1);
+    // Always use rates[rateType] if available
+    const selected = rates[rateType]?.price;
+    let newRate: number | undefined = undefined;
+    if (typeof selected === "number") {
+      newRate = selected / 100;
+    } else {
+      // Fallback: try the other rate
+      const altType = rateType === "RES" ? "COM" : "RES";
+      const alt = rates[altType]?.price;
+      if (typeof alt === "number") {
+        newRate = alt / 100;
+      } else {
+        newRate = 0.1; // Only fallback if both are missing
+      }
+    }
+    setElectricityRateState(newRate);
+    // Debug log
+    // eslint-disable-next-line no-console
+    console.log({ rateType, electricityRate: newRate, rates });
   }, [rates, rateType, isManual, loading]);
 
   // Manual override
